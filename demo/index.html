@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anatrea Pins</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">
+    {"imports":{"three":"./vendor/three/three.module.min.js","three/addons/":"./vendor/three/addons/","anatrea-pins/sample-data":"./sample-data.js"}}
+  </script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="./">Anatrea Pins</a>
+    <div class="actions" id="files">
+      <select id="model-choice" aria-label="Sample model" data-sk-label="Ukážkový model">
+        <option value="bone" data-sk="Stehenná kosť">Femur</option>
+        <option value="assembly" data-sk="Kosti v oblasti kolena">Knee bones</option>
+        <option value="bearing" data-sk="Prírubové ložisko">Flanged bearing</option>
+        <option value="custom" hidden data-sk="Vlastný model">Custom model</option>
+      </select>
+      <label class="button upload"><span data-sk="Otvoriť GLB">Open GLB</span> <input id="model-file" type="file" accept=".glb,model/gltf-binary"></label>
+      <label class="button upload"><span data-sk="Načítať JSON">Import JSON</span> <input id="pin-file" type="file" accept=".json,application/json"></label>
+      <button id="reopen-editor" type="button" hidden data-sk="Úprava pinov">Edit pins</button>
+    </div>
+    <select id="language" aria-label="Language" data-sk-label="Jazyk">
+      <option value="en" selected>English</option>
+      <option value="sk">Slovenčina</option>
+    </select>
+  </header>
+  <main>
+    <div class="workspace">
+      <section class="model-pane" aria-label="3D model">
+        <div id="viewport">
+          <strong id="model-name" class="viewer-title">Femur</strong>
+          <div id="scene"></div>
+          <div class="viewer-hint" data-sk="Potiahni pre otočenie. Kolieskom priblížiš.">Drag to rotate. Scroll to zoom.</div>
+        </div>
+        <div class="separation-tools" id="separation-tools" hidden>
+          <label for="explosion" data-sk="Oddelenie častí">Exploded view</label>
+          <input id="explosion" type="range" min="0" max="100" step="1" value="0">
+          <output id="explosion-value" for="explosion">0%</output>
+          <label class="checkbox"><input id="explode-selected" type="checkbox">
+            <span data-sk="Iba označené časti">Selected parts only</span>
+          </label>
+        </div>
+        <details id="structure-panel">
+          <summary><span data-sk="Štruktúry modelu">Model structures</span> <span id="structure-count"></span></summary>
+          <div class="structure-tools">
+            <input id="structure-search" type="search" aria-label="Search model parts" placeholder="Search the model…" data-sk-label="Hľadať časti modelu" data-sk-placeholder="Hľadať v modeli…">
+            <button id="isolate-parts" type="button" disabled data-sk="Izolovať označené">Isolate selected</button>
+            <button id="hide-parts" type="button" disabled data-sk="Skryť označené">Hide selected</button>
+            <button id="restore-parts" type="button" disabled data-sk="Zobraziť všetky">Show all</button>
+          </div>
+          <ul id="structure-list"></ul>
+        </details>
+      </section>
+      <section class="sidebar" aria-label="Pin editor and test" data-sk-label="Úprava pinov a test">
+        <section id="editing">
+          <section class="panel" id="pin-panel" aria-labelledby="pin-panel-title">
+            <div class="panel-heading">
+              <h1 id="pin-panel-title" data-sk="Úprava pinov">Edit pins</h1>
+              <button id="close-editor" type="button" aria-label="Close editor" data-sk-label="Zavrieť editor">×</button>
+            </div>
+            <label class="field"><span data-sk="Štruktúra">Structure</span> <input id="pin-search" type="search" placeholder="Search by name…" data-sk-placeholder="Hľadať názov…"></label>
+            <select id="pin-picker" aria-label="Choose structure" data-sk-label="Vyber štruktúru"><option value="" data-sk="Vyber štruktúru">Choose structure</option></select>
+            <button id="new-pin" type="button" data-sk="Pridať pin">Add pin</button>
+            <form id="pin-form" hidden>
+              <label class="field"><span data-sk="Názov">Name</span> <input id="pin-label" required maxlength="160" placeholder="e.g. Caput femoris" data-sk-placeholder="Napr. Caput femoris"></label>
+              <label class="field"><span data-sk="Ďalšie uznávané odpovede">Other accepted answers</span> <textarea id="pin-answers" rows="2" placeholder="One answer per line" data-sk-placeholder="Každá odpoveď na nový riadok"></textarea></label>
+              <label class="checkbox"><input id="pin-include" type="checkbox" checked> <span data-sk="Zaradiť do praktických testov">Include in practical tests</span></label>
+              <div class="actions">
+                <button id="place-pin" type="button" aria-pressed="false">Place on model</button>
+                <button class="primary" id="save-pin" type="submit" disabled data-sk="Uložiť a overiť">Save and verify</button>
+              </div>
+              <div class="actions">
+                <button id="cancel-pin" type="button" data-sk="Zrušiť návrh">Discard changes</button>
+                <button class="quiet" id="delete-pin" type="button" data-sk="Odstrániť pin">Delete pin</button>
+              </div>
+              <details id="pin-history" hidden>
+                <summary data-sk="Predchádzajúce polohy">Previous positions</summary>
+                <select id="history-picker" aria-label="Previous position" data-sk-label="Predchádzajúca poloha"></select>
+                <button id="restore-position" type="button" data-sk="Použiť polohu v návrhu">Use position in draft</button>
+              </details>
+            </form>
+            <div class="actions">
+              <button id="export" type="button" data-sk="Stiahnuť polohy">Download pins</button>
+            </div>
+            <p id="placement-status">Choose a structure or add a pin.</p>
+          </section>
+          <details class="panel" id="test-settings-panel">
+            <summary data-sk="Praktický test">Practical test</summary>
+            <form id="exam-settings">
+              <div class="settings">
+                <label class="field"><span data-sk="Počet pinov">Number of pins</span> <input id="exam-count" type="number" min="1" max="1000" required></label>
+                <label class="field"><span data-sk="Sekundy na pin">Seconds per pin</span> <input id="exam-time" type="number" min="1" max="3600" required></label>
+              </div>
+              <button class="primary" type="submit" data-sk="Spustiť test">Start test</button>
+            </form>
+          </details>
+        </section>
+        <section class="panel" id="exam-panel" hidden>
+          <div class="panel-heading"><h1 data-sk="Praktický test">Practical test</h1><button id="exit-exam" type="button" data-sk="Ukončiť test">End test</button></div>
+          <form id="answer-form">
+            <div class="exam-progress"><span id="question-number"></span><span id="timer"></span></div>
+            <label class="field"><span data-sk="Názov označenej štruktúry">Name the marked structure</span> <input id="answer" autocomplete="off" spellcheck="false"></label>
+            <button class="primary" type="submit" data-sk="Odoslať odpoveď">Submit answer</button>
+          </form>
+          <section id="exam-results" hidden aria-live="polite">
+            <h2 id="score"></h2>
+            <ol id="responses"></ol>
+          </section>
+        </section>
+        <p id="status" role="status"></p>
+      </section>
+    </div>
+    <footer class="model-credit">
+      <span data-sk="Ukážkové modely">Demo models</span> · <a href="https://ana3d.app/en/atlas/o3d-lower-limb/" target="_blank" rel="noopener">Open3DModel</a> ·
+      Jan Kooloos, Eungyeol Lee et al. ·
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+    </footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
