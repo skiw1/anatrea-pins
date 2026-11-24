@@ -76,8 +76,20 @@ summary { cursor: pointer; font-weight: 650; }
 #structure-list small, #timer { color: var(--muted); }
 #pin-history select, #pin-history button { margin-top: .4rem; }
 .exam-progress { font-variant-numeric: tabular-nums; }
+#answer-feedback, #responses li { --outcome-color: var(--muted); }
+#exam-panel [data-outcome=correct] { --outcome-color: #a9e9be; }
+#exam-panel [data-outcome=incorrect] { --outcome-color: #ffb4ab; }
+#exam-panel [data-outcome=timeout] { --outcome-color: #f5d48d; }
+#answer-feedback { margin: 0; color: var(--outcome-color); font-weight: 700; }
+#answer-feedback:not(:empty) { margin-top: .65rem; }
 #exam-results { margin-top: .8rem; }
 #responses { padding-left: 1.4rem; overflow-wrap: anywhere; }
+#responses li { margin: .55rem 0; padding: .5rem .65rem; background: var(--input); border-left: 3px solid var(--outcome-color); border-radius: .3rem; }
+#responses li::marker, .result-status { color: var(--outcome-color); }
+#responses dl { margin: .3rem 0 0; }
+#responses dt { font-size: .85rem; color: var(--muted); }
+#responses dd { margin: 0 0 .35rem; }
+#responses dd:last-child { margin-bottom: 0; }
 @media (max-width: 760px) {
   .masthead { flex-wrap: wrap; }
   .workspace { grid-template-columns: 1fr; }

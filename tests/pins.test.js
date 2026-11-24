@@ -19,18 +19,28 @@ test('names, accepted answers, study-only pins and positions round-trip through 
 
 test('only eligible pins are drawn, aliases score and solutions remain out of the question view', () => {
   const project = createProject('model', {
-    pins: [pin('1', 'Caput femoris', true, ['Femoral head']), pin('2', 'Fovea capitis', false)],
-    exam: { count: 1, secondsPerPin: 30 }
+    pins: [pin('1', 'Caput femoris', true, ['Femoral head']), pin('2', 'Fovea capitis', false), pin('3', 'Collum femoris')],
+    exam: { count: 2, secondsPerPin: 30 }
   });
   const exam = createExam(project, { now: () => 0, random: () => 0 });
   assert.equal(exam.results(), null);
+  assert.equal(exam.lastResponse(), null);
   const question = exam.current();
   assert.equal(question.id, '1');
   assert.equal(question.label, undefined);
   assert.equal(question.answers, undefined);
-  assert.ok(exam.submit(question.id, '  FEMORAL   HEAD  '));
-  assert.equal(exam.results().score, 1);
-  assert.throws(() => createExam({ ...project, exam: { ...project.exam, count: 2 } }), /Enable at least 2/);
+  assert.equal(exam.submit(question.id, '  FEMORAL   HEAD  '), true);
+  assert.deepEqual(exam.lastResponse(), { number: 1, correct: true, timedOut: false });
+  assert.equal(exam.results(), null);
+  assert.equal(exam.current().id, '3');
+  assert.equal(exam.submit('3', 'Trochanter'), true);
+  assert.deepEqual(exam.lastResponse(), { number: 2, correct: false, timedOut: false });
+  const result = exam.results();
+  assert.equal(result.score, 1);
+  assert.deepEqual(result.responses.map(({ answer, label }) => [answer, label]), [
+    ['FEMORAL   HEAD', 'Caput femoris'], ['Trochanter', 'Collum femoris']
+  ]);
+  assert.throws(() => createExam({ ...project, exam: { ...project.exam, count: 3 } }), /Enable at least 3/);
 });
 
 test('timeouts cannot submit stale answers to the next question or reset the clock', () => {
@@ -42,6 +52,7 @@ test('timeouts cannot submit stale answers to the next question or reset the clo
   const exam = createExam(project, { now: () => elapsed, random: () => 0 });
   elapsed = 10001;
   assert.equal(exam.submit('1', 'A'), false);
+  assert.deepEqual(exam.lastResponse(), { number: 1, correct: false, timedOut: true });
   assert.equal(exam.current().id, '2');
   assert.equal(exam.current().remainingMs, 9999);
   assert.equal(exam.submit('2', 'B'), true);

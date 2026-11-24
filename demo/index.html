@@ -101,13 +101,14 @@
         </section>
         <section class="panel" id="exam-panel" hidden>
           <div class="panel-heading"><h1 data-sk="Praktický test">Practical test</h1><button id="exit-exam" type="button" data-sk="Ukončiť test">End test</button></div>
+          <p id="answer-feedback" role="status" aria-atomic="true"></p>
           <form id="answer-form">
             <div class="exam-progress"><span id="question-number"></span><span id="timer"></span></div>
             <label class="field"><span data-sk="Názov označenej štruktúry">Name the marked structure</span> <input id="answer" autocomplete="off" spellcheck="false"></label>
             <button class="primary" type="submit" data-sk="Odoslať odpoveď">Submit answer</button>
           </form>
-          <section id="exam-results" hidden aria-live="polite">
-            <h2 id="score"></h2>
+          <section id="exam-results" hidden>
+            <h2 id="score" tabindex="-1"></h2>
             <ol id="responses"></ol>
           </section>
         </section>

@@ -138,6 +138,11 @@ export function createExam(project, { now = () => performance.now(), random = Ma
       deadline = time + duration;
       return true;
     },
+    lastResponse() {
+      const response = responses.at(-1);
+      if (!response) return null;
+      return { number: responses.length, correct: response.correct, timedOut: response.timedOut };
+    },
     results() {
       expire(now());
       if (responses.length < exam.count) return null;

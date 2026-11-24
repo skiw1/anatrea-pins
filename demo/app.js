@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createThreeSurface } from '../src/three.js';
-import { createExam, createProject, parseProject, removePin, serializeProject, upsertPin } from '../src/index.js';
+import { createExam, createProject, normalizeAnswer, parseProject, removePin, serializeProject, upsertPin } from '../src/index.js';
 import { loadSample, samplePartNames, sampleTitles } from './samples.js';
 
 const $ = id => document.getElementById(id);
@@ -98,6 +98,7 @@ $('language').onchange = () => {
   renderStructures();
   if (exam) {
     const result = exam.results();
+    renderExamFeedback();
     if (result) renderExamResults(result);
   } else {
     renderPins();
@@ -474,15 +475,53 @@ function saveSettings() {
   });
 }
 
+function answerOutcome(response) {
+  if (response.timedOut) return ['timeout', t('Čas vypršal', 'Time expired')];
+  if (response.correct) return ['correct', t('Správne', 'Correct')];
+  return ['incorrect', t('Nesprávne', 'Incorrect')];
+}
+
+function renderExamFeedback() {
+  const feedback = $('answer-feedback');
+  const response = exam.lastResponse();
+  if (!response) {
+    feedback.textContent = '';
+    delete feedback.dataset.outcome;
+    return;
+  }
+  const [outcome, label] = answerOutcome(response);
+  feedback.dataset.outcome = outcome;
+  feedback.textContent = `Pin ${response.number} · ${label}`;
+}
+
 function renderExamResults(result) {
   $('answer-form').hidden = true;
   $('exam-results').hidden = false;
   $('score').textContent = `${t('Výsledok', 'Score')}: ${result.score} / ${result.total}`;
+  const pins = new Map(project.pins.map(pin => [pin.id, pin]));
   $('responses').replaceChildren(...result.responses.map(response => {
     const item = document.createElement('li');
-    const answer = response.timedOut ? t('Čas vypršal', 'Time expired') :
-      (response.answer || t('Bez odpovede', 'No answer'));
-    item.textContent = `${response.label} — ${answer}${response.correct ? ' ✓' : ''}`;
+    const [outcome, label] = answerOutcome(response);
+    item.dataset.outcome = outcome;
+    const status = document.createElement('strong');
+    status.className = 'result-status';
+    status.textContent = label;
+    const details = document.createElement('dl');
+    const canonical = normalizeAnswer(response.label);
+    const aliases = pins.get(response.id).answers.filter(value => normalizeAnswer(value) !== canonical);
+    const fields = [
+      [t('Tvoja odpoveď', 'Your answer'), response.answer || t('Bez odpovede', 'No answer')],
+      [t('Správna odpoveď', 'Correct answer'), response.label]
+    ];
+    if (aliases.length) fields.push([t('Uznávané varianty', 'Also accepted'), aliases.join(' · ')]);
+    for (const [name, value] of fields) {
+      const term = document.createElement('dt');
+      const definition = document.createElement('dd');
+      term.textContent = name;
+      definition.textContent = value;
+      details.append(term, definition);
+    }
+    item.append(status, details);
     return item;
   }));
   markers.clear();
@@ -492,11 +531,14 @@ function drawExam() {
   if ($('answer-form').hidden) return;
   const question = exam.current();
   if (!question) {
+    renderExamFeedback();
     renderExamResults(exam.results());
+    $('score').focus({ preventScroll: true });
     return;
   }
   if (question.id !== activeQuestion?.id) {
     activeQuestion = question;
+    renderExamFeedback();
     const { point, normal } = surface.resolve(question.anchor);
     controls.target.copy(point).multiplyScalar(0.6);
     camera.position.copy(controls.target).addScaledVector(normal, 3.5 / Math.min(1, camera.aspect));

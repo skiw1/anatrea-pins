@@ -24,7 +24,7 @@ Open [127.0.0.1:4178](http://127.0.0.1:4178) in a browser with WebGL. The demo b
 
 1. Use **Exploded view** to move parts apart and set the slider to 0% to put them back. Under **Model structures**, you can mark parts and choose **Isolate selected** or **Hide selected**. Turn on **Selected parts only** to move just the parts you marked. Each part must already be a separate mesh in the model.
 2. Click **Add pin**, enter the name and optional accepted answers, one per line. Click **Place on model**, pick a point on the surface and review it before choosing **Save and verify**. Select an existing pin to rename, move or delete it. Previous positions are available during the current session.
-3. Under **Practical test**, set the number of pins and seconds per pin. Pins with **Include in practical tests** enabled are eligible for selection. The test uses the original assembled model, draws pins without repeats and scores typed answers at the end. Ending the test restores the editor's visibility and separation.
+3. Under **Practical test**, set the number of pins and seconds per pin. Pins with **Include in practical tests** enabled are eligible for selection. The test uses the original assembled model, draws pins without repeats and marks each answer as it is submitted. The end screen lists your answers and the accepted names. Ending the test restores the editor's visibility and separation.
 4. Choose **Download pins** to keep the pin positions and test settings. Open the same GLB before importing that JSON elsewhere. The JSON contains annotations and test settings. The GLB supplies the geometry.
 
 ## Add it to an atlas
@@ -68,7 +68,7 @@ Call `surface.setExplodedView(0.5)` to separate the model's meshes visually. The
 
 For storage, save the serialized project to a file, your own browser storage or your own API. On load, use `parseProject(json)` and compare the returned `modelId` with your loaded model ID before resolving the anchors. The demo uses a SHA-256 file digest as the model ID for imported GLBs.
 
-Use `createExam(project)` for practice. `exam.current()` returns the current anchor and remaining time. Pass its ID and the typed answer to `exam.submit(id, answer)`. `exam.results()` returns the score and responses after completion. Answer matching ignores case and repeated whitespace. Provide accepted alternate spellings as explicit aliases. The demo keeps answers in the browser for self-study. An official graded exam would need server-side storage and grading.
+Use `createExam(project)` for practice. `exam.current()` returns the current anchor and remaining time. Pass its ID and the typed answer to `exam.submit(id, answer)`. `exam.lastResponse()` returns the outcome of the most recently recorded answer or timeout. `exam.results()` returns the score and responses after completion. The demo shows feedback after each pin and compares submitted answers with accepted answers at the end. Answer matching ignores case and repeated whitespace. Provide accepted alternate spellings as explicit aliases. The demo keeps answers in the browser for self-study. An official graded exam would need server-side storage and grading.
 
 ## Development
 
