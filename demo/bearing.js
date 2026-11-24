@@ -103,5 +103,5 @@ export function loadBearingSample() {
     return { id: name, label: english, answers: [slovak], inExam: true, anchor };
   });
   surface.setVisibleStructures(null);
-  return { id: 'demo-bearing-v1', model, pins };
+  return { id: 'demo-bearing-v1', model, pins, explosionAxis: 'y' };
 }

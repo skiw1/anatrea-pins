@@ -27,7 +27,7 @@ function visible(mesh) {
   return true;
 }
 
-function prepareExplosion(root, byKey) {
+function prepareExplosion(root, byKey, axis) {
   root.updateWorldMatrix(true, true);
   const worldToModel = new Matrix4().copy(root.matrixWorld).invert();
   const modelBounds = new Box3();
@@ -39,35 +39,59 @@ function prepareExplosion(root, byKey) {
     return {
       key,
       mesh,
-      center: bounds.getCenter(new Vector3()),
+      bounds,
       position: mesh.position.clone(),
       translation: new Vector3().setFromMatrixPosition(mesh.matrix),
       offset: new Vector3(),
       target: new Vector3()
     };
   });
-  const center = modelBounds.getCenter(new Vector3());
   const size = modelBounds.getSize(new Vector3());
-  const maxSpread = Math.max(size.x, size.y, size.z) * 0.34;
-  const tolerance = Math.max(Number.EPSILON, maxSpread * 0.02);
-  const coincident = new Map();
+  const longest = ['x', 'y', 'z'].reduce((best, next) => size[next] > size[best] ? next : best);
+  axis ??= longest;
   for (const part of parts) {
-    part.offset.copy(part.center).sub(center);
-    part.offset.clampLength(maxSpread * 0.45, maxSpread);
-    const cell = part.center.toArray().map(axis => Math.round(axis / tolerance)).join(',');
-    if (!coincident.has(cell)) coincident.set(cell, []);
-    coincident.get(cell).push(part);
+    part.min = part.bounds.min[axis];
+    part.max = part.bounds.max[axis];
   }
-  for (const group of coincident.values()) {
-    if (group.length === 1 && group[0].offset.lengthSq() > 0) continue;
-    group.forEach(({ offset }, index) => {
-      const angle = index * Math.PI * 2 / group.length;
-      offset.x += Math.cos(angle) * maxSpread * 0.7;
-      offset.z += Math.sin(angle) * maxSpread * 0.7;
-      offset.clampLength(0, maxSpread);
-    });
+  const ordered = [...parts].sort((a, b) => (a.min + a.max) - (b.min + b.max));
+  return { parts, ordered, axis, gap: size[longest] * 0.2 };
+}
+
+function spreadFrom(anchor, parts, axis, gap, direction) {
+  const [near, far] = direction > 0 ? ['min', 'max'] : ['max', 'min'];
+  let previous = anchor;
+  for (const part of parts) {
+    const overlap = direction * (previous[far] - part[near]);
+    part.offset[axis] = previous.offset[axis] + direction * (gap + Math.max(0, overlap));
+    previous = part;
   }
-  return parts;
+}
+
+function layoutExplosion({ ordered, axis, gap }, selection) {
+  const moving = [];
+  const fixed = { min: Infinity, max: -Infinity, offset: new Vector3() };
+  for (const part of ordered) {
+    part.offset[axis] = 0;
+    if (!selection || selection.has(part.key)) moving.push(part);
+    else {
+      fixed.min = Math.min(fixed.min, part.min);
+      fixed.max = Math.max(fixed.max, part.max);
+    }
+  }
+  if (moving.length === 0) return;
+  if (moving.length === ordered.length) {
+    const first = moving[0];
+    spreadFrom(first, moving.slice(1), axis, gap, 1);
+    const shift = moving.at(-1).offset[axis] / 2;
+    for (const part of moving) part.offset[axis] -= shift;
+    return;
+  }
+  // Treat stationary parts as a single interval so moving parts clear the whole group.
+  const midpoint = fixed.min + fixed.max;
+  const split = moving.findIndex(part => part.min + part.max >= midpoint);
+  const upperStart = split < 0 ? moving.length : split;
+  spreadFrom(fixed, moving.slice(0, upperStart).reverse(), axis, gap, -1);
+  spreadFrom(fixed, moving.slice(upperStart), axis, gap, 1);
 }
 
 function restoreParts(root, parts) {
@@ -78,7 +102,10 @@ function restoreParts(root, parts) {
   root.updateWorldMatrix(true, true);
 }
 
-export function createThreeSurface(root, { meshKey = mesh => hierarchyKey(mesh, root) } = {}) {
+export function createThreeSurface(root, { meshKey = mesh => hierarchyKey(mesh, root), explosionAxis } = {}) {
+  if (explosionAxis !== undefined && !['x', 'y', 'z'].includes(explosionAxis)) {
+    throw new RangeError('The explosion axis must be x, y, or z.');
+  }
   const byKey = new Map();
   const byMesh = new Map();
   root.traverse(mesh => {
@@ -117,24 +144,23 @@ export function createThreeSurface(root, { meshKey = mesh => hierarchyKey(mesh, 
         throw new RangeError('Explosion amount must be between 0 and 1.');
       }
       if (byKey.size < 2) return;
-      if (explosion) restoreParts(root, explosion);
+      if (explosion) restoreParts(root, explosion.parts);
       if (amount === 0) {
         explosion = null;
         return;
       }
-      explosion ??= prepareExplosion(root, byKey);
+      explosion ??= prepareExplosion(root, byKey, explosionAxis);
       const selection = keys == null ? null : new Set(keys);
+      layoutExplosion(explosion, selection);
       const modelTransform = new Matrix3().setFromMatrix4(root.matrixWorld);
       const displacement = new Vector3();
-      for (const part of explosion) {
+      for (const part of explosion.parts) {
         part.target.setFromMatrixPosition(part.mesh.matrixWorld);
-        if (!selection || selection.has(part.key)) {
-          displacement.copy(part.offset).applyMatrix3(modelTransform).multiplyScalar(amount);
-          part.target.add(displacement);
-        }
+        displacement.copy(part.offset).applyMatrix3(modelTransform).multiplyScalar(amount);
+        part.target.add(displacement);
       }
       // Targets are fixed before changing parent transforms, including meshes inside other meshes.
-      for (const { mesh, target } of explosion) {
+      for (const { mesh, target } of explosion.parts) {
         if (mesh.parent) mesh.parent.worldToLocal(target);
         mesh.position.copy(target);
         if (!mesh.matrixAutoUpdate) mesh.matrix.setPosition(target);

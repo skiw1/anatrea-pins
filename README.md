@@ -64,7 +64,7 @@ The default mesh key is the child's path within the model hierarchy. You can sup
 
 Use `surface.structures()` to list the supported meshes with their keys, names and visibility. Pass an iterable of keys to `surface.setVisibleStructures(keys)` to display chosen meshes. Pass `null` to restore the original Three.js layers. This preserves mesh IDs and saved pin anchors. Hidden meshes are excluded from picking.
 
-Call `surface.setExplodedView(0.5)` to separate the model's meshes visually. Pass mesh keys as the optional second argument to move only those meshes. The amount ranges from 0 (original positions) to 1 (full separation). Pin anchors remain on their original surface triangles, and `surface.resolve(anchor)` returns each pin's current world position.
+Call `surface.setExplodedView(0.5)` to separate the model's meshes visually. The amount ranges from 0 (original positions) to 1 (a gap between parts). By default, parts spread along the model's longest axis. For assemblies with a known direction, set `createThreeSurface(model, { explosionAxis: 'y' })`. Pass mesh keys as the optional second argument to move only those meshes away from the stationary assembly. Pin anchors remain on their original surface triangles, and `surface.resolve(anchor)` returns each pin's current world position.
 
 For storage, save the serialized project to a file, your own browser storage or your own API. On load, use `parseProject(json)` and compare the returned `modelId` with your loaded model ID before resolving the anchors. The demo uses a SHA-256 file digest as the model ID for imported GLBs.
 

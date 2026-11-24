@@ -31,6 +31,9 @@ const selectedMaterial = new THREE.MeshStandardMaterial({ color: '#ed4760', emis
 const steel = new THREE.MeshStandardMaterial({ color: '#c7ced5', metalness: 0.3, roughness: 0.32 });
 const up = new THREE.Vector3(0, 1, 0);
 const cameraSpace = new THREE.Vector3();
+const separationCenter = new THREE.Vector3();
+const modelBounds = new THREE.Box3();
+const modelSphere = new THREE.Sphere();
 const pinPixelFactor = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
 scene.add(modelLayer, markers);
 
@@ -48,6 +51,8 @@ const selectedStructures = new Set();
 let visibleStructures = null;
 let statusText = ['', ''];
 let displayedSeparation = 0;
+let assembledRadius;
+let separationScale = 1;
 let editorView;
 const translations = [
   ['data-sk', 'textContent'],
@@ -113,7 +118,9 @@ renderer.setAnimationLoop(() => {
   if (exam) drawExam();
   camera.updateMatrixWorld();
   const height = Math.max(1, viewport.clientHeight);
+  const uprightPins = !exam && displayedSeparation > 0;
   for (const marker of markers.children) {
+    if (uprightPins) marker.quaternion.copy(camera.quaternion);
     cameraSpace.copy(marker.position).applyMatrix4(camera.matrixWorldInverse);
     marker.scale.setScalar(Math.max(camera.near, -cameraSpace.z) * pinPixelFactor / height);
   }
@@ -135,8 +142,8 @@ function disposeModel(group) {
   for (const resource of resources) resource.dispose();
 }
 
-function setModel(model, modelId, title, viewDirection = new THREE.Vector3(0, 0, 1)) {
-  const nextSurface = createThreeSurface(model);
+function setModel(model, modelId, title, viewDirection = new THREE.Vector3(0, 0, 1), explosionAxis) {
+  const nextSurface = createThreeSurface(model, { explosionAxis });
   const bounds = new THREE.Box3().setFromObject(model);
   const size = bounds.getSize(new THREE.Vector3());
   const extent = Math.max(size.x, size.y, size.z);
@@ -151,6 +158,11 @@ function setModel(model, modelId, title, viewDirection = new THREE.Vector3(0, 0,
   selectedStructures.clear();
   visibleStructures = null;
   displayedSeparation = 0;
+  assembledRadius = modelBounds.setFromObject(modelLayer).getBoundingSphere(modelSphere).radius;
+  separationCenter.copy(modelSphere.center);
+  separationScale = 1;
+  controls.maxDistance = 16;
+  camera.far = 120;
   $('explosion').value = '0';
   $('explode-selected').checked = false;
   $('explosion-value').textContent = '0%';
@@ -170,9 +182,9 @@ function setModel(model, modelId, title, viewDirection = new THREE.Vector3(0, 0,
 }
 
 async function openSample(which) {
-  const { model, id, pins } = await loadSample(which);
-  const direction = which === 'bearing' ? new THREE.Vector3(2, 2.6, 4) : undefined;
-  if (!setModel(model, id, t(...sampleTitles[which]), direction)) {
+  const { model, id, pins, explosionAxis } = await loadSample(which);
+  const direction = which === 'bearing' ? new THREE.Vector3(2, 1, 4) : undefined;
+  if (!setModel(model, id, t(...sampleTitles[which]), direction, explosionAxis)) {
     project = createProject(id, { pins, exam: { count: pins.length, secondsPerPin: 30 } });
   }
   activeModelChoice = which;
@@ -255,11 +267,19 @@ function applySeparation() {
   const percentage = $('explosion').valueAsNumber;
   const amount = percentage / 100;
   const selected = $('explode-selected').checked ? selectedStructures : null;
-  surface.setExplodedView(amount, selected);
   const visibleAmount = selected?.size === 0 ? 0 : amount;
-  const scale = (1 + visibleAmount * 0.35) / (1 + displayedSeparation * 0.35);
-  camera.position.sub(controls.target).multiplyScalar(scale).add(controls.target);
+  surface.setExplodedView(amount, selected);
+  modelBounds.setFromObject(modelLayer).getBoundingSphere(modelSphere);
+  const scale = modelSphere.radius / assembledRadius * (1 + visibleAmount * 0.2);
+  camera.position.sub(controls.target).multiplyScalar(scale / separationScale);
+  controls.target.sub(separationCenter).add(modelSphere.center);
+  camera.position.add(controls.target);
+  controls.maxDistance = 16 * scale;
+  camera.far = 120 * scale;
+  camera.updateProjectionMatrix();
   controls.update();
+  separationCenter.copy(modelSphere.center);
+  separationScale = scale;
   displayedSeparation = visibleAmount;
   $('explosion-value').textContent = `${percentage}%`;
   renderEditorMarkers();
