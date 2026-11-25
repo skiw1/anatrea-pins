@@ -6,7 +6,7 @@ Place annotations on 3D models and use them to build timed practical tests. An a
 
 ### Anatrea Pins in practice
 
-[Watch the 21-second walkthrough](https://skiw1.github.io/anatrea-pins/anatrea-in-practice.mp4) to see the standalone editor alongside Anatrea’s anatomy atlas. The standalone demo exposes the editing tools. The atlas shows how the same pin-quiz workflow can fit a custom interface with timed questions and answer feedback.
+[Watch the walkthrough](https://skiw1.github.io/anatrea-pins/anatrea-in-practice.mp4?v=2) to see the standalone editor alongside Anatrea’s anatomy atlas. The standalone demo exposes the editing tools. The atlas shows how the same pin-quiz workflow can fit a custom interface with timed questions and answer feedback.
 
 Models shown in the video: [Open3DModel](https://ana3d.app/en/atlas/o3d-lower-limb/) (Jan Kooloos, Eungyeol Lee et al.) and [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy) (Gauthier Kervyn and contributors, based on BodyParts3D), under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
