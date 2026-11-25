@@ -1,10 +1,44 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Vector3 } from 'three';
+import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Vector3 } from 'three';
 import { createThreeSurface } from '../src/three.js';
+import { revealExamPin } from '../demo/exam-view.js';
 
 const camera = new PerspectiveCamera(40, 1, 0.1, 50);
 camera.position.set(0, 0, 5);
+
+test('a practical test reveals an inner pin without isolating an unobstructed question', () => {
+  const assembly = new Group();
+  const inner = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+  const cover = new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
+  inner.name = 'inner';
+  cover.name = 'cover';
+  assembly.add(inner, cover);
+  const surface = createThreeSurface(assembly, { meshKey: mesh => mesh.name });
+  const coverPin = surface.pick(camera, { x: 0, y: 0 });
+  surface.setVisibleStructures(['inner']);
+  const innerPin = surface.pick(camera, { x: 0, y: 0 });
+  surface.setVisibleStructures(null);
+
+  assert.equal(coverPin.mesh, 'cover');
+  assert.equal(innerPin.mesh, 'inner');
+  assert.deepEqual(revealExamPin(assembly, surface, innerPin, camera), { isolated: true, overlay: false });
+  assert.deepEqual(surface.structures().filter(part => part.visible).map(part => part.key), ['inner']);
+  surface.setVisibleStructures(null);
+  assert.deepEqual(revealExamPin(assembly, surface, coverPin, camera), { isolated: false, overlay: false });
+  assert.equal(surface.structures().filter(part => part.visible).length, 2);
+});
+
+test('a pin covered by its own mesh is marked for foreground rendering', () => {
+  const near = new PlaneGeometry().toNonIndexed().translate(0, 0, 1);
+  const far = new PlaneGeometry().toNonIndexed();
+  const positions = [...near.attributes.position.array, ...far.attributes.position.array];
+  const geometry = new BufferGeometry().setAttribute('position', new Float32BufferAttribute(positions, 3));
+  const model = new Mesh(geometry, new MeshBasicMaterial());
+  const surface = createThreeSurface(model);
+  const anchor = { mesh: 'root', triangle: 2, weights: [0.2, 0.4, 0.4], normalSign: 1 };
+  assert.deepEqual(revealExamPin(model, surface, anchor, camera), { isolated: false, overlay: true });
+});
 
 for (const geometry of [new BoxGeometry(), new PlaneGeometry().toNonIndexed()]) {
   test(`a ${geometry.type} anchor survives export and changes of the model transform`, () => {

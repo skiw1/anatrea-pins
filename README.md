@@ -20,6 +20,8 @@ Use Node.js 22.15 or newer. In the terminal, run this from the project that will
 npm install anatrea-pins
 ```
 
+The npm package declares Three.js `0.170.x` as a peer dependency. If your project already uses Three.js, make sure its version matches this range. The core project and quiz APIs are renderer-independent.
+
 Save the following JavaScript as `quick-start.mjs` in that project. The example uses a simple Three.js box, so you don't need to download a 3D model.
 
 ```js
@@ -59,8 +61,8 @@ Open [127.0.0.1:4178](http://127.0.0.1:4178) in a browser with WebGL. The demo b
 
 1. Use **Exploded view** to move parts apart and set the slider to 0% to put them back. Under **Model structures**, you can mark parts and choose **Isolate selected** or **Hide selected**. Turn on **Selected parts only** to move just the parts you marked. Each part must already be a separate mesh in the model.
 2. Click **Add pin**, enter the name and optional accepted answers, one per line. Click **Place on model**, pick a point on the surface and review it before choosing **Save and verify**. Select an existing pin to rename, move or delete it. Previous positions are available during the current session.
-3. Under **Practical test**, set the number of pins and seconds per pin. Pins with **Include in practical tests** enabled are eligible for selection. The test uses the original assembled model, draws pins without repeats and marks each answer as it is submitted. The end screen lists your answers and the accepted names. Ending the test restores the editor's visibility and separation.
-4. Choose **Download pins** to keep the pin positions and test settings. Open the same GLB before importing that JSON elsewhere. The JSON contains annotations and test settings. The GLB supplies the geometry.
+3. Under **Practical test**, set the number of pins and seconds per pin. Pins with **Include in practical tests** enabled are eligible for selection. The test starts each question with the assembled model and adjusts the view if another surface covers the pin. It draws pins without repeats and marks answers as they are submitted. The end screen lists your answers and the accepted names. Ending the test restores the editor's visibility and separation.
+4. Choose **Download pins** to keep the pin positions and test settings. For a built-in sample such as **Knee bones**, select the same sample again before choosing **Import JSON**. For a model opened through **Open GLB**, reopen the same GLB file before importing. The JSON contains annotations and test settings. The model supplies the geometry.
 
 ## Add it to an atlas
 
@@ -112,5 +114,7 @@ npm test
 ```
 
 The tests cover JSON round-tripping, pin selection, answer matching, timer expiry, and geometry anchors on indexed and non-indexed meshes.
+
+Run `npm run pack:library` from the source checkout to build a release archive. It includes the library, README and license. The demo and test commands are available from the source checkout.
 
 The library code is under the MIT license. The demo bundles Three.js and its addons under their [MIT license](https://github.com/skiw1/anatrea-pins/blob/main/demo/vendor/three/LICENSE). The demo's Open3DModel bone meshes are under CC BY-SA 4.0. See [model attribution](https://github.com/skiw1/anatrea-pins/blob/main/demo/models/ATTRIBUTION.md) for credits.

@@ -13,10 +13,12 @@ const modules = [
   ['anatrea-pins/three', '../src/three.js'],
   ['anatrea-pins/bearing', './bearing.js', { '../src/three.js': 'anatrea-pins/three' }],
   ['anatrea-pins/samples', './samples.js', { './bearing.js': 'anatrea-pins/bearing' }],
+  ['anatrea-pins/exam-view', './exam-view.js'],
   [entry, './app.js', {
     '../src/index.js': 'anatrea-pins/core',
     '../src/three.js': 'anatrea-pins/three',
-    './samples.js': 'anatrea-pins/samples'
+    './samples.js': 'anatrea-pins/samples',
+    './exam-view.js': 'anatrea-pins/exam-view'
   }]
 ];
 
@@ -47,4 +49,4 @@ html = replaceRequired(html, '<link rel="stylesheet" href="./styles.css">', `<st
 html = replaceRequired(html, '<script type="module" src="./app.js"></script>', `<script type="module">import '${entry}';</script>`);
 html = replaceRequired(html, 'href="./"', 'href="#"');
 html = replaceRequired(html, '</body>', `<!-- Anatrea Pins\n${projectLicense}\nThree.js\n${threeLicense}\n${attribution}-->\n</body>`);
-await writeFile(new URL('../anatrea-pins-demo.html', import.meta.url), html);
+await writeFile(new URL('../anatrea-pins-demo.html', import.meta.url), html.replace(/\r\n/g, '\n'));

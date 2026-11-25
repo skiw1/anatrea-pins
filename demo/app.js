@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createThreeSurface } from '../src/three.js';
 import { createExam, createProject, normalizeAnswer, parseProject, removePin, serializeProject, upsertPin } from '../src/index.js';
 import { loadSample, samplePartNames, sampleTitles } from './samples.js';
+import { revealExamPin } from './exam-view.js';
 
 const $ = id => document.getElementById(id);
 let language = 'en';
@@ -29,6 +30,12 @@ const pinShaft = new THREE.ConeGeometry(1, 1, 14).rotateZ(Math.PI);
 const pinMaterial = new THREE.MeshStandardMaterial({ color: '#c8273d', emissive: '#590915', emissiveIntensity: 0.35, roughness: 0.3 });
 const selectedMaterial = new THREE.MeshStandardMaterial({ color: '#ed4760', emissive: '#590915', emissiveIntensity: 0.35, roughness: 0.3 });
 const steel = new THREE.MeshStandardMaterial({ color: '#c7ced5', metalness: 0.3, roughness: 0.32 });
+const overlayHead = selectedMaterial.clone();
+const overlayShaft = steel.clone();
+for (const material of [overlayHead, overlayShaft]) {
+  material.depthTest = false;
+  material.depthWrite = false;
+}
 const up = new THREE.Vector3(0, 1, 0);
 const cameraSpace = new THREE.Vector3();
 const separationCenter = new THREE.Vector3();
@@ -321,7 +328,7 @@ function renderMarkers(pins, selectedAnchor) {
   if (selectedAnchor && visibleParts.has(selectedAnchor.mesh)) addMarker(selectedAnchor, selectedMaterial);
 }
 
-function addMarker(anchor, material) {
+function addMarker(anchor, material, shaftMaterial = steel) {
   const { point, normal } = surface.resolve(anchor);
   const direction = normal.clone();
   const towardCamera = camera.position.clone().sub(point).normalize();
@@ -335,11 +342,12 @@ function addMarker(anchor, material) {
   const head = new THREE.Mesh(pinHead, material);
   head.scale.setScalar(7);
   head.position.y = 38;
-  const shaft = new THREE.Mesh(pinShaft, steel);
+  const shaft = new THREE.Mesh(pinShaft, shaftMaterial);
   shaft.scale.set(0.8, 38, 0.8);
   shaft.position.y = 19;
   head.frustumCulled = false;
   shaft.frustumCulled = false;
+  if (shaftMaterial === overlayShaft) head.renderOrder = shaft.renderOrder = 1;
   marker.add(head, shaft);
   markers.add(marker);
 }
@@ -531,6 +539,7 @@ function drawExam() {
   if ($('answer-form').hidden) return;
   const question = exam.current();
   if (!question) {
+    $('exam-view-note').hidden = true;
     renderExamFeedback();
     renderExamResults(exam.results());
     $('score').focus({ preventScroll: true });
@@ -539,11 +548,15 @@ function drawExam() {
   if (question.id !== activeQuestion?.id) {
     activeQuestion = question;
     renderExamFeedback();
+    surface.setVisibleStructures(null);
     const { point, normal } = surface.resolve(question.anchor);
     controls.target.copy(point).multiplyScalar(0.6);
     camera.position.copy(controls.target).addScaledVector(normal, 3.5 / Math.min(1, camera.aspect));
     controls.update();
-    renderMarkers([], question.anchor);
+    const { isolated, overlay } = revealExamPin(modelLayer, surface, question.anchor, camera);
+    markers.clear();
+    addMarker(question.anchor, overlay ? overlayHead : selectedMaterial, overlay ? overlayShaft : steel);
+    $('exam-view-note').hidden = !isolated && !overlay;
     $('question-number').textContent = `Pin ${question.number} / ${question.total}`;
     $('answer').value = '';
     $('answer').focus({ preventScroll: true });
@@ -568,7 +581,6 @@ $('exam-settings').onsubmit = event => {
     closeForm();
     editorView = { camera: camera.position.clone(), target: controls.target.clone() };
     surface.setExplodedView(0);
-    surface.setVisibleStructures(null);
     $('separation-tools').hidden = true;
     $('structure-panel').hidden = true;
     $('editing').hidden = true;

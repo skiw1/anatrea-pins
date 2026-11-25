@@ -1,6 +1,6 @@
 {
   "name": "anatrea-pins",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Portable 3D annotations and timed anatomy practicals",
   "type": "module",
   "license": "MIT",
@@ -8,14 +8,21 @@
     ".": "./src/index.js",
     "./three": "./src/three.js"
   },
-  "files": ["src"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "peerDependencies": {
     "three": ">=0.170.0 <0.171.0"
   },
   "scripts": {
     "build:demo": "node demo/build-offline.js",
     "demo": "node demo/serve.js",
+    "pack:library": "node tools/pack-library.js",
     "test": "node --import ./tests/register-three.js --test tests/*.test.js"
   },
-  "engines": { "node": ">=22.15" }
+  "engines": {
+    "node": ">=22.15"
+  }
 }
