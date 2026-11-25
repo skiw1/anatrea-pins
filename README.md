@@ -4,6 +4,12 @@ Place annotations on 3D models and use them to build timed practical tests. An a
 
 **[Try the demo](https://skiw1.github.io/anatrea-pins/anatrea-pins-demo.html)** · Opens in your browser with sample models. No installation or sign-in required.
 
+### Anatrea Pins in practice
+
+[Watch the 21-second walkthrough](https://skiw1.github.io/anatrea-pins/anatrea-in-practice.mp4) to see the standalone editor alongside Anatrea’s anatomy atlas. The standalone demo exposes the editing tools. The atlas shows how the same pin-quiz workflow can fit a custom interface with timed questions and answer feedback.
+
+Models shown in the video: [Open3DModel](https://ana3d.app/en/atlas/o3d-lower-limb/) (Jan Kooloos, Eungyeol Lee et al.) and [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy) (Gauthier Kervyn and contributors, based on BodyParts3D), under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+
 ## Why download it?
 
 Use the standalone editor to annotate a 3D model and turn those annotations into a timed identification test. The editor opens local GLB files in your browser and saves the annotations as a reusable JSON file.
