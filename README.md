@@ -2,6 +2,8 @@
 
 Place annotations on 3D models and use them to build timed practical tests. An atlas author chooses a location on the model, enters a name and accepted alternatives, and decides whether each pin is eligible for a test.
 
+**[Try the demo](https://skiw1.github.io/anatrea-pins/anatrea-pins-demo.html)** · Opens in your browser with sample models. No installation or sign-in required.
+
 ## Why download it?
 
 Use the standalone editor to annotate a 3D model and turn those annotations into a timed identification test. The editor opens local GLB files in your browser and saves the annotations as a reusable JSON file.
