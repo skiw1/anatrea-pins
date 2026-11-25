@@ -12,6 +12,31 @@ https://github.com/user-attachments/assets/d470bd3e-1941-444a-b552-42b9edf7936e
 
 Models shown in the video: [Open3DModel](https://ana3d.app/en/atlas/o3d-lower-limb/) (Jan Kooloos, Eungyeol Lee et al.) and [Z-Anatomy](https://github.com/Z-Anatomy/Models-of-human-anatomy) (Gauthier Kervyn and contributors, based on BodyParts3D), under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
+## Quick start with npm
+
+Use Node.js 22.15 or newer. In the terminal, run this from the project that will use the library:
+
+```sh
+npm install anatrea-pins
+```
+
+Save the following JavaScript as `quick-start.mjs` in that project. The example uses a simple Three.js box, so you don't need to download a 3D model.
+
+```js
+import { createProject } from 'anatrea-pins';
+import { createThreeSurface } from 'anatrea-pins/three';
+import { BoxGeometry, Mesh } from 'three';
+
+const project = createProject('my-first-model');
+const surface = createThreeSurface(new Mesh(new BoxGeometry()));
+
+console.log(project.modelId, typeof surface.pick);
+```
+
+Back in the terminal, run `node quick-start.mjs`. It should print `my-first-model function`.
+
+The npm package contains the library. For the editor and sample models, use the [online demo](https://skiw1.github.io/anatrea-pins/) or the [GitHub source checkout](https://github.com/skiw1/anatrea-pins).
+
 ## Why download it?
 
 Use the standalone editor to annotate a 3D model and turn those annotations into a timed identification test. The editor opens local GLB files in your browser and saves the annotations as a reusable JSON file.
@@ -20,9 +45,9 @@ Use the standalone editor to annotate a 3D model and turn those annotations into
 - **Technical training:** Open a GLB exported from a CAD tool, separate the parts of an assembly and annotate components. Use the same pins for a parts-identification exercise.
 - **Existing viewers:** Keep your own 3D viewer. Use Anatrea Pins to author the data, then use its JavaScript API to resolve the pin positions and run a test.
 
-## Try it locally
+## Try the demo from the source checkout
 
-Open the packaged `anatrea-pins-demo.html` directly in a browser with WebGL. You can build this single-file version from the source with `npm run build:demo`.
+The demo and its example models are available in the source checkout. Open `anatrea-pins-demo.html` directly in a browser with WebGL. You can build this single-file version from the source with `npm run build:demo`.
 
 To work on the demo as separate source files, use Node.js 22.15 or newer. From this directory run:
 
@@ -41,7 +66,7 @@ Open [127.0.0.1:4178](http://127.0.0.1:4178) in a browser with WebGL. The demo b
 
 The core project and exam APIs are independent of the renderer. The included Three.js adapter works with static triangle meshes and was tested with Three.js 0.170.0. A different renderer can implement its own method of creating and resolving surface anchors. The reference demo shows a complete integration with vanilla JavaScript.
 
-Install this checkout with `npm install /path/to/anatrea-pins` in your atlas, then create the surface adapter using the model's root object. Call `surface.pick` with the atlas camera and pointer coordinates converted to normalized device coordinates, with `x` and `y` from −1 to 1.
+Install `anatrea-pins` in your atlas project, then create the surface adapter using the model's root object. Call `surface.pick` with the atlas camera and pointer coordinates converted to normalized device coordinates, with `x` and `y` from −1 to 1.
 
 ```js
 import { createProject, serializeProject, upsertPin } from 'anatrea-pins';
@@ -88,4 +113,4 @@ npm test
 
 The tests cover JSON round-tripping, pin selection, answer matching, timer expiry, and geometry anchors on indexed and non-indexed meshes.
 
-The application code is under the MIT license. The demo bundles Three.js and its addons under their own MIT license in `demo/vendor/three/LICENSE`. The Open3DModel bone meshes are under CC BY-SA 4.0. See [model attribution](demo/models/ATTRIBUTION.md).
+The library code is under the MIT license. The demo bundles Three.js and its addons under their [MIT license](https://github.com/skiw1/anatrea-pins/blob/main/demo/vendor/three/LICENSE). The demo's Open3DModel bone meshes are under CC BY-SA 4.0. See [model attribution](https://github.com/skiw1/anatrea-pins/blob/main/demo/models/ATTRIBUTION.md) for credits.
